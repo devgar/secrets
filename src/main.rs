@@ -1,69 +1,105 @@
+mod error;
+mod web;
+
+pub use crate::error::{Error, Result};
+
+use axum::http::HeaderName;
 use axum::{
-    routing::{get, post},
-    http::{StatusCode, header},
+    extract::Path,
+    http::{header, StatusCode},
+    routing::{delete, get, post},
     Json, Router,
 };
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use axum::http::HeaderName;
-
 
 #[tokio::main]
 async fn main() {
-    // initialize tracing
     tracing_subscriber::fmt::init();
 
-    // build our application with a route
     let app = Router::new()
-        // `GET /` goes to `root`
+        .merge(web::routes_login::routes())
         .route("/", get(root))
-        // `POST /users` goes to `create_user`
-        .route("/users", post(create_user));
+        .route("/users", post(create_user))
+        .route("/users/:id", delete(delete_user));
 
-    // run our app with hyper
-    // `axum::Server` is a re-export of `hyper::Server`
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    tracing::debug!("listening on {}", addr);
+    tracing::info!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
 }
 
-// basic handler that responds with a static string
+fn create_location(name: &str, id: u64) -> (HeaderName, &'static str) {
+    (
+        header::LOCATION,
+        Box::leak(format!("/{}/{}", name, id).into_boxed_str()),
+    )
+}
+
 async fn root() -> &'static str {
+    tracing::info!("{:>8} /", "GET");
     "Hello, World!"
 }
 
 async fn create_user(
-    // this argument tells axum to parse the request body
-    // as JSON into a `CreateUser` type
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, [(HeaderName, &'static str); 1]) {
+    Json(payload): Json<User>,
+) -> (
+    StatusCode,
+    [(HeaderName, &'static str); 1],
+    // Json<Option<DBO<User>>>,
+) {
+    tracing::info!("{:>8} /users", "POST");
     // insert your application logic here
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
+    let user = DBO::insert(payload);
 
-    // this will be converted into a JSON response
-    // with a status code of `201 Created`
-    // (StatusCode::CREATED, &*format!("/users/{}", user.id).leak())
     (
+        // Response CREATED (LOCATION=/users/:userId
         StatusCode::CREATED,
-        [(header::LOCATION, Box::leak(format!("/users/{}", user.id).into_boxed_str()))],
+        [create_location("users", user.id)],
+        // Json(Some(user)),
     )
 }
 
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-    username: std::string::String,
+async fn delete_user(Path(id): Path<u64>) -> (StatusCode, Json<DBO<User>>) {
+    tracing::info!("{:>8} /users/{}", "DELETE", id);
+    (
+        StatusCode::OK,
+        Json(DBO {
+            id,
+            entity: User {
+                username: String::from("Gar"),
+            },
+        }),
+    )
 }
 
-// the output to our `create_user` handler
-#[derive(Serialize)]
-struct User {
+#[derive(Deserialize, Serialize)]
+struct DBO<T: Serialize> {
     id: u64,
-    username: std::string::String,
+    #[serde(flatten)]
+    entity: T,
+}
+
+impl<T: Serialize> DBO<T> {
+    fn insert(payload: T) -> DBO<T> {
+        let mut rng = rand::thread_rng();
+        // DO SOMETHING TO INSERT IN DATABASE
+        DBO {
+            id: rng.gen_range(1..999),
+            entity: payload,
+        }
+    }
+}
+
+// the input to our `create_user` handler
+#[derive(Deserialize, Serialize)]
+struct User {
+    username: String,
+}
+
+impl User {
+    const TABLE: &'static str = "users";
 }

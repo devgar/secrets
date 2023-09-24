@@ -1,16 +1,14 @@
+mod api;
+
 use axum::routing::{get, get_service};
 use axum::Router;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
-mod routes_login;
-mod routes_users;
-
 pub fn routes() -> Router {
     Router::new()
         .route("/", get(root))
-        .nest("/users", routes_users::routes())
-        .nest("/login", routes_login::routes())
+        .nest("/api", api::routes())
         .layer(TraceLayer::new_for_http())
         .fallback_service(routes_static())
 }

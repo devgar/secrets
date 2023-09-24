@@ -1,28 +1,7 @@
+pub mod user;
+
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize)]
-pub struct User {
-    username: String,
-}
-
-impl User {
-    const TABLE: &'static str = "users";
-}
-
-impl Default for User {
-    fn default() -> Self {
-        User {
-            username: String::from("Undefined"),
-        }
-    }
-}
-
-impl DboTable for User {
-    fn get_table() -> &'static str {
-        User::TABLE
-    }
-}
 
 #[derive(Deserialize, Serialize)]
 pub struct Dbo<T: Serialize> {

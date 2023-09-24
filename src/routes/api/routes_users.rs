@@ -4,18 +4,20 @@ use axum::http::{HeaderName, StatusCode};
 use axum::routing::{delete, post};
 use axum::{Json, Router};
 
+use crate::models::user::User;
+
 pub fn routes() -> Router {
     Router::new()
         .route("/", post(create_user))
         .route("/:id", delete(delete_user))
 }
 
-pub async fn delete_user(Path(id): Path<u64>) -> (StatusCode, Json<models::Dbo<models::User>>) {
-    (StatusCode::OK, Json(models::Dbo::<models::User>::get(id)))
+pub async fn delete_user(Path(id): Path<u64>) -> (StatusCode, Json<models::Dbo<User>>) {
+    (StatusCode::OK, Json(models::Dbo::<User>::get(id)))
 }
 
 async fn create_user(
-    Json(payload): Json<models::User>,
+    Json(payload): Json<User>,
 ) -> (
     StatusCode,
     [(HeaderName, &'static str); 1],

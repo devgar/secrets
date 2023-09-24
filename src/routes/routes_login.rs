@@ -1,16 +1,13 @@
-use std::ffi::CString;
-use axum::{Json, Router};
+use crate::{Error, Result};
 use axum::routing::post;
+use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use crate::{Error, Result};
 
 pub fn routes() -> Router {
-    Router::new().route("/api/login", post(api_login))
+    Router::new().route("/", post(api_login))
 }
 async fn api_login(payload: Json<LoginPayload>) -> Result<Json<Value>> {
-    tracing::info!("->> {:12} - api_login", "HANDLER");
-
     if payload.username != "demo1" || payload.password != "welcome" {
         return Err(Error::LoginFail);
     }
@@ -22,8 +19,6 @@ async fn api_login(payload: Json<LoginPayload>) -> Result<Json<Value>> {
     }));
 
     Ok(body)
-
-    // todo!()
 }
 #[derive(Debug, Deserialize)]
 struct LoginPayload {

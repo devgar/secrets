@@ -9,8 +9,6 @@ pub enum Error {
 }
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        tracing::error!("--{:<12} - {self:?}", "INTO_RES");
-
         //todo!()
         (StatusCode::INTERNAL_SERVER_ERROR, "UNHANDLED_CLIENT_ERROR").into_response()
     }

@@ -1,9 +1,10 @@
+pub mod ticket;
 pub mod user;
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Dbo<T: Serialize> {
     pub id: u64,
     #[serde(flatten)]
